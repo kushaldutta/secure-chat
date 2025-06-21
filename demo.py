@@ -9,7 +9,7 @@ import threading
 from crypto_utils import (
     generate_keys, serialize_public_key, derive_shared_key,
     encrypt_message, decrypt_message, get_key_fingerprint,
-    generate_session_id, CryptoError
+    generate_session_id, CryptoError, generate_salt
 )
 
 def demo_key_exchange():
@@ -37,9 +37,13 @@ def demo_key_exchange():
     print(f"📤 Alice sends her public key to Bob (fingerprint: {alice_fingerprint})")
     print(f"📤 Bob sends his public key to Alice (fingerprint: {bob_fingerprint})")
     
-    # Derive shared keys
-    alice_shared_key, alice_salt = derive_shared_key(alice_priv, bob_pub_bytes)
-    bob_shared_key, bob_salt = derive_shared_key(bob_priv, alice_pub_bytes)
+    # Alice generates salt and sends it to Bob (simulating the server-client protocol)
+    salt = generate_salt()
+    print(f"🔑 Alice generates salt: {salt.hex()[:16]}...")
+    
+    # Derive shared keys using the same salt
+    alice_shared_key, _ = derive_shared_key(alice_priv, bob_pub_bytes, salt)
+    bob_shared_key, _ = derive_shared_key(bob_priv, alice_pub_bytes, salt)
     
     # Verify both parties have the same key
     if alice_shared_key == bob_shared_key:
@@ -141,14 +145,15 @@ def demo_performance():
     
     # Test key derivation performance
     print("Testing key derivation performance...")
+    salt = generate_salt()
     start_time = time.time()
     for _ in range(50):
-        derive_shared_key(priv, pub_bytes)
+        derive_shared_key(priv, pub_bytes, salt)
     key_time = time.time() - start_time
     print(f"✅ 50 key derivations: {key_time:.3f}s ({50/key_time:.1f} ops/sec)")
     
     # Test encryption/decryption performance
-    shared_key, salt = derive_shared_key(priv, pub_bytes)
+    shared_key, _ = derive_shared_key(priv, pub_bytes, salt)
     test_msg = "Performance test message"
     
     print("Testing encryption/decryption performance...")
