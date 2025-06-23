@@ -219,7 +219,3 @@ This is an educational project demonstrating cryptographic concepts. While the i
 ### Network Security
 - [TLS/SSL protocols](https://en.wikipedia.org/wiki/Transport_Layer_Security)
 - [Secure communication patterns](https://en.wikipedia.org/wiki/Secure_communication)
-
----
-
-**Happy secure chatting! 🔐💬** 
