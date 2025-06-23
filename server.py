@@ -129,7 +129,6 @@ class SecureChatServer:
         client_info = self.clients[client_id]
         client_socket = client_info['conn']
         aes_key = client_info['aes_key']
-        username = client_info['username']
         
         try:
             while True:
@@ -159,18 +158,19 @@ class SecureChatServer:
                             print(f"[*] {old_username} changed username to {new_username}")
                             continue
                     
-                    # Regular message
-                    print(f"\n[{username}] {message}")
+                    # Regular message - use current username from client_info
+                    current_username = client_info['username']
+                    print(f"\n[{current_username}] {message}")
                     
-                    # Broadcast to other clients
-                    self.broadcast_message(f"{username}: {message}", exclude_client_id=client_id)
+                    # Broadcast to other clients with current username
+                    self.broadcast_message(f"{current_username}: {message}", exclude_client_id=client_id)
                     
                 except CryptoError as e:
-                    print(f"[!] Failed to decrypt message from {username}: {e}")
+                    print(f"[!] Failed to decrypt message from {client_info['username']}: {e}")
                     continue
                     
         except Exception as e:
-            print(f"[!] Error receiving messages from {username}: {e}")
+            print(f"[!] Error receiving messages from {client_info['username']}: {e}")
     
     def broadcast_message(self, message, exclude_client_id=None):
         """Broadcast message to all connected clients"""
