@@ -159,8 +159,14 @@ class SecureChatClient:
         
         if cmd == '/username' and len(cmd_parts) > 1:
             old_username = self.username
-            self.username = cmd_parts[1]
-            print(f"[*] Username changed from {old_username} to {self.username}")
+            new_username = cmd_parts[1]
+            self.username = new_username
+            
+            # Send username change message to server
+            change_message = f"USERNAME_CHANGE:{old_username}:{new_username}"
+            self._send_message(change_message)
+            
+            print(f"[*] Username changed from {old_username} to {new_username}")
         elif cmd == '/fingerprint':
             print(f"[*] Server fingerprint: {self.server_fingerprint}")
             print(f"[*] Client fingerprint: {self.client_fingerprint}")

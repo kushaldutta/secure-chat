@@ -140,6 +140,26 @@ class SecureChatServer:
                 # Decrypt message
                 try:
                     message = decrypt_message(aes_key, encrypted_data)
+                    
+                    # Check if this is a username change message
+                    if message.startswith("USERNAME_CHANGE:"):
+                        # Parse username change
+                        parts = message.split(":")
+                        if len(parts) == 3:
+                            old_username = parts[1]
+                            new_username = parts[2]
+                            
+                            # Update username in server records
+                            client_info['username'] = new_username
+                            
+                            # Broadcast username change to other clients
+                            change_notification = f"{old_username} changed their username to {new_username}"
+                            self.broadcast_message(change_notification, exclude_client_id=client_id)
+                            
+                            print(f"[*] {old_username} changed username to {new_username}")
+                            continue
+                    
+                    # Regular message
                     print(f"\n[{username}] {message}")
                     
                     # Broadcast to other clients
