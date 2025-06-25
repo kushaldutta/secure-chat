@@ -2,9 +2,14 @@ import socket
 import threading
 import time
 import sys
+import os
 from crypto_utils import (
     generate_keys, serialize_public_key, derive_shared_key, 
     decrypt_message, encrypt_message, get_key_fingerprint, CryptoError
+)
+from cert_utils import (
+    deserialize_certificate, validate_certificate, 
+    extract_public_key_from_certificate, load_expected_fingerprint, CertError
 )
 
 HOST = '127.0.0.1'
@@ -14,12 +19,23 @@ class SecureChatClient:
     def __init__(self, host=HOST, port=PORT, username=None):
         self.host = host
         self.port = port
-        self.username = username or f"User-{int(time.time()) % 10000}"
+        self.username = username or f"user_{os.getpid()}"
         self.client_socket = None
+        self.connected = False
+        self.private_key = None
+        self.public_key = None
         self.aes_key = None
         self.server_fingerprint = None
-        self.connected = False
-        self.session_id = None
+        self.client_fingerprint = None
+        
+        # Load expected server certificate fingerprint
+        try:
+            self.expected_server_fingerprint = load_expected_fingerprint()
+            print(f"[*] Loaded expected server fingerprint: {self.expected_server_fingerprint}")
+        except CertError as e:
+            print(f"[!] Warning: Could not load server fingerprint: {e}")
+            print(f"[!] Certificate validation will be skipped")
+            self.expected_server_fingerprint = None
         
     def connect(self):
         """Connect to the secure chat server"""
@@ -56,10 +72,35 @@ class SecureChatClient:
         self.private_key, self.public_key = generate_keys()
         self.client_fingerprint = get_key_fingerprint(serialize_public_key(self.public_key))
         
-        # Receive server's public key
-        server_pub_key_bytes = self.client_socket.recv(2048)
-        if not server_pub_key_bytes:
-            raise CryptoError("No public key received from server")
+        # Receive server's certificate
+        server_cert_bytes = self.client_socket.recv(4096)  # Certificates are larger than public keys
+        if not server_cert_bytes:
+            raise CryptoError("No certificate received from server")
+        
+        # Validate server certificate
+        try:
+            server_certificate = deserialize_certificate(server_cert_bytes)
+            print(f"[*] Server certificate received")
+            print(f"[*] Subject: {server_certificate.subject}")
+            print(f"[*] Valid from: {server_certificate.not_valid_before}")
+            print(f"[*] Valid until: {server_certificate.not_valid_after}")
+            
+            # Validate certificate
+            validate_certificate(server_certificate, self.expected_server_fingerprint)
+            print(f"[+] Server certificate validated successfully!")
+            
+            # Extract public key from certificate
+            server_public_key = extract_public_key_from_certificate(server_certificate)
+            server_pub_key_bytes = serialize_public_key(server_public_key)
+            
+        except CertError as e:
+            print(f"[!] Certificate validation failed: {e}")
+            if self.expected_server_fingerprint:
+                print(f"[!] This could be a man-in-the-middle attack!")
+                raise CryptoError(f"Certificate validation failed: {e}")
+            else:
+                print(f"[!] Proceeding without certificate validation (not recommended)")
+                server_pub_key_bytes = server_cert_bytes  # Fallback to old behavior
         
         # Send our public key
         self.client_socket.sendall(serialize_public_key(self.public_key))

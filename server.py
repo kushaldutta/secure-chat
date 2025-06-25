@@ -7,6 +7,10 @@ from crypto_utils import (
     decrypt_message, encrypt_message, generate_session_id,
     get_key_fingerprint, CryptoError, generate_salt
 )
+from cert_utils import (
+    generate_self_signed_certificate, serialize_certificate,
+    save_certificate_fingerprint, CertError
+)
 
 HOST = '127.0.0.1'
 PORT = 5000
@@ -18,6 +22,19 @@ class SecureChatServer:
         self.clients = {}  # {client_id: {'conn': socket, 'aes_key': key, 'username': str}}
         self.server_private_key, self.server_public_key = generate_keys()
         self.server_fingerprint = get_key_fingerprint(serialize_public_key(self.server_public_key))
+        
+        # Generate server certificate
+        try:
+            self.server_certificate = generate_self_signed_certificate(
+                self.server_private_key, 
+                self.server_public_key,
+                f"Secure Chat Server ({self.host}:{self.port})"
+            )
+            self.certificate_fingerprint = save_certificate_fingerprint(self.server_certificate)
+            print(f"[+] Server certificate generated with fingerprint: {self.certificate_fingerprint}")
+        except CertError as e:
+            print(f"[!] Failed to generate certificate: {e}")
+            raise
         
     def start(self):
         """Start the secure chat server"""
@@ -63,9 +80,9 @@ class SecureChatServer:
             # Generate salt for key derivation
             salt = generate_salt()
             
-            # Send server's public key
-            server_pub_key_bytes = serialize_public_key(self.server_public_key)
-            client_socket.sendall(server_pub_key_bytes)
+            # Send server's certificate (contains public key)
+            server_cert_bytes = serialize_certificate(self.server_certificate)
+            client_socket.sendall(server_cert_bytes)
             
             # Receive client's public key
             client_pub_key_bytes = client_socket.recv(2048)

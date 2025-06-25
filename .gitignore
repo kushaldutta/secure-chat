@@ -1,3 +1,33 @@
+# Python
 venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Security-sensitive files (NEVER commit these!)
+*.pem                    # Private keys and certificates
+server_private_key.pem   # Server private key
+server_certificate.pem   # Server certificate
+server_fingerprint.txt   # Server certificate fingerprint
+demo_fingerprint.txt     # Demo certificate fingerprint
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
