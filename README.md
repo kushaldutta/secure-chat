@@ -19,6 +19,8 @@ A comprehensive, end-to-end encrypted chat application that demonstrates advance
 - **Replay Protection** - Messages older than 5 minutes are rejected
 - **Tampering Detection** - Any modification to encrypted data is detected
 - **Key Fingerprinting** - Visual verification of cryptographic identities
+- **Certificate Validation** - Server authentication prevents MITM attacks
+- **Self-Signed Certificates** - Secure certificate-based authentication
 
 ### Application Features
 - **Multi-client support** - Server can handle multiple simultaneous clients
@@ -50,6 +52,35 @@ A comprehensive, end-to-end encrypted chat application that demonstrates advance
    ```bash
    pip install cryptography
    ```
+
+## 🔐 Certificate Setup
+
+The application uses certificate-based authentication to prevent man-in-the-middle attacks.
+
+### Initial Setup
+
+1. **Generate server certificates:**
+   ```bash
+   python setup_certificates.py
+   ```
+
+2. **Distribute the fingerprint:**
+   - Copy `server_fingerprint.txt` to all client machines
+   - This file contains the server's certificate fingerprint for verification
+
+### Security Demo
+
+To see the security features in action, run:
+```bash
+python certificate_demo.py
+```
+
+This demonstrates:
+- **Normal operation** - Legitimate server certificates are validated
+- **MITM attack detection** - Fake certificates are rejected
+- **Certificate tampering detection** - Modified certificates are rejected
+- **Expired certificate detection** - Outdated certificates are rejected
+- **Fingerprint uniqueness** - Each certificate has a unique fingerprint
 
 ## 🚀 Usage
 
@@ -173,12 +204,13 @@ Typical performance metrics:
 
 ### Current Limitations
 - No persistent key storage
-- No certificate-based authentication
 - No message persistence
 - No file transfer support
+- Self-signed certificates (not CA-signed)
 
 ### Planned Enhancements
-- [ ] Certificate-based authentication
+- [x] Certificate-based authentication ✅
+- [ ] CA-signed certificates for production use
 - [ ] Persistent key storage with secure enclaves
 - [ ] Message history and persistence
 - [ ] File transfer with chunked encryption
